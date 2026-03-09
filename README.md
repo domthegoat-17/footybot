@@ -1,5 +1,3 @@
-# ⚽ FootyBot
-
 FootyBot is an automated football news bot that scans major RSS feeds, detects trending soccer stories, generates short-form scripts using AI, and posts them to Discord.
 
 The goal is to automatically surface the most interesting football stories and turn them into engaging YouTube Shorts or TikTok-style scripts.
@@ -188,12 +186,6 @@ Planned upgrades include:
 * better trend detection
 * automatic scheduling
 * support for multiple output platforms
-
----
-
-## License
-
-This project is open source and available under the MIT License.
 
 ---
 
