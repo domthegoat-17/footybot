@@ -1,84 +1,62 @@
-FootyBot is an automated football news bot that scans major RSS feeds, detects trending soccer stories, generates short-form scripts using AI, and posts them to Discord.
+FootyBot
+FootyBot is an automated football news bot that scans major RSS feeds, detects trending soccer stories, generates short-form scripts using AI, and posts them to Discord — built for YouTube Shorts and TikTok content creation.
 
-The goal is to automatically surface the most interesting football stories and turn them into engaging YouTube Shorts or TikTok-style scripts.
+Features
 
----
+Aggregates football news from multiple RSS feeds
+Filters out non-soccer content
+Detects trending stories across multiple sources
+Scores stories using a custom heat score algorithm
+Generates single-story scripts with OpenAI
+Generates rapid-fire roundup scripts covering transfers, injuries, and drama
+Builds a persistent knowledge store of football intel across hourly runs
+Knowledge store resets daily at midnight EST for fresh daily content
+Prevents duplicate posts using link and topic fingerprint tracking
+Posts everything directly to Discord via webhook
 
-## Features
 
-• Aggregates football news from multiple RSS feeds
-• Filters out non-soccer content
-• Detects trending stories across multiple sources
-• Scores stories using a custom **heat score algorithm**
-• Generates short-form scripts with OpenAI
-• Prevents duplicate posts using link and topic fingerprint tracking
-• Posts scripts directly to a Discord channel via webhook
-
----
-
-## Project Structure
-
-```
+Project Structure
 footybot/
-├ config.py
-├ feed_reader.py
-├ filters.py
-├ script_generator.py
-├ tracker.py
-├ discord_post.py
-├ main.py
-├ sources.txt
-├ seen_links.txt
-└ README.md
-```
+├── config.py
+├── feed_reader.py
+├── filters.py
+├── script_generator.py
+├── script_formatter.py
+├── tracker.py
+├── discord_post.py
+├── knowledge_store.py
+├── knowledge_extractor.py
+├── main.py
+├── roundup.py
+├── sources.txt
+├── seen_links.txt
+└── README.md
+File Overview
+config.py
+Scoring weights, keyword lists, heat score terms, competition bonuses, trend bonuses, and similarity thresholds.
+feed_reader.py
+Loads RSS feeds and extracts article titles, summaries, and publish times. Falls back to full article scraping when summaries are too short.
+filters.py
+Handles soccer filtering, heat score calculation, entity extraction, topic similarity detection, and trend grouping.
+script_generator.py
+Generates a single-story YouTube Shorts script for one article using OpenAI. Opinionated, fast-talking tone with hooks and a closing question.
+script_formatter.py
+Reformats paragraph-style scripts into YouTube Shorts pacing — one sentence per line with natural pauses.
+tracker.py
+Prevents duplicate posts using URL tracking and topic fingerprint hashing. Entries expire after 3 days.
+knowledge_store.py
+Manages knowledge.json — a persistent store of structured intel extracted from every qualifying article. Stores transfers, injuries, and drama only. Resets daily at midnight EST.
+knowledge_extractor.py
+Makes a lightweight GPT call per article to extract structured intel: category, player, clubs, fee, rumour status, and a one-sentence key fact. Skips anything that isn't a transfer, injury, or on-pitch drama.
+discord_post.py
+Posts scripts to Discord via webhook. Handles Discord's 2000 character limit by splitting long messages automatically.
+main.py
+The main bot pipeline. Runs on a loop every hour. Press Ctrl+C to stop.
+roundup.py
+Generates a rapid-fire roundup script from stored knowledge intel. Run manually whenever you want a new roundup posted.
 
-### File Overview
-
-**config.py**
-Contains scoring weights, keyword lists, trend bonuses, and similarity thresholds.
-
-**feed_reader.py**
-Loads RSS feeds and extracts article titles, summaries, and publish times.
-
-**filters.py**
-Handles:
-
-* soccer filtering
-* heat score calculation
-* entity extraction
-* topic similarity detection
-* trend detection
-
-**script_generator.py**
-Uses the OpenAI API to generate short-form football scripts suitable for YouTube Shorts or TikTok.
-
-**tracker.py**
-Tracks previously posted articles to prevent duplicates using:
-
-* link tracking
-* topic fingerprint hashing
-
-**discord_post.py**
-Posts generated scripts to Discord via webhook.
-
-**main.py**
-The main bot pipeline:
-
-1. Fetch RSS feeds
-2. Filter soccer stories
-3. Score articles
-4. Detect trending topics
-5. Generate scripts
-6. Post to Discord
-7. Track posted stories
-
----
-
-## How It Works
-
-FootyBot processes news in the following pipeline:
-
-```
+How It Works
+Main Pipeline (runs every hour)
 RSS Feeds
    ↓
 Article Parsing
@@ -87,108 +65,73 @@ Soccer Filtering
    ↓
 Heat Score Ranking
    ↓
-Topic Similarity Grouping
-   ↓
 Trend Detection
    ↓
-Script Generation (OpenAI)
+Knowledge Store Population (transfers, injuries, drama)
+   ↓
+Script Generation — top 3 stories (OpenAI)
    ↓
 Discord Posting
    ↓
 Duplicate Tracking
-```
+Roundup Pipeline (run manually)
+knowledge.json
+   ↓
+Filter by category (transfers / injuries / drama)
+   ↓
+Build intel block
+   ↓
+Roundup Script Generation (OpenAI)
+   ↓
+Discord Posting
 
-Trending stories are detected when multiple sources report the same topic.
-
----
-
-## Requirements
-
+Requirements
 Python 3.10+
-
-Install dependencies:
-
-```
 pip install feedparser newspaper3k openai requests
-```
 
----
-
-## Environment Variables
-
-You must set a Discord webhook URL.
-
-Example:
-
-```
+Environment Variables
 DISCORD_WEBHOOK_URL=your_webhook_url_here
-```
+OPENAI_API_KEY=your_openai_key_here
+Store these in a .env file. Make sure .env is in your .gitignore.
 
-Optional: store this in a `.env` file.
-
----
-
-## Running the Bot
-
-Run the main script:
-
-```
+Running the Bot
+Start the hourly loop:
 python main.py
-```
+Press Ctrl+C at any time to stop cleanly.
+The bot will run immediately on start, then wait 60 minutes between each run. The knowledge store is wiped automatically at midnight EST each day.
 
-The bot will:
+Generating a Roundup
+Run this manually whenever you want a roundup script posted to Discord:
+python roundup.py transfers
+python roundup.py injuries
+python roundup.py drama
+Running without an argument shows what is currently in the knowledge store:
+python roundup.py
+The roundup script style is rapid-fire and factual — player, situation, clubs interested, fee if known. No opinions, no takes, no sign-off. Built to be read straight to camera.
 
-1. Fetch articles from RSS feeds
-2. Filter soccer-related news
-3. Rank stories using the heat scoring system
-4. Detect trending stories across sources
-5. Generate scripts with AI
-6. Post results to Discord
+Knowledge Store
+Every article that passes soccer filtering gets classified by GPT into one of three categories:
 
----
+transfer — signings, bids, loans, rumours, fees
+injury — player injuries, doubts, returns
+drama — red cards, bans, suspensions, last-minute goals, comebacks
 
-## Example Output
+Anything else (previews, press conferences, manager sackings, opinion pieces) is skipped entirely and not stored.
+Each entry captures: player name, from/to clubs, fee, rumour status (rumour / advanced / official), and a one-sentence key fact.
+The store accumulates across all hourly runs throughout the day, giving the roundup a rich pool to draw from. It resets at midnight EST.
 
-```
-⚽ FOOTYBOT SCRIPT
+Scoring System
+Articles are ranked using a heat score that considers:
 
-Source: BBC Sport
-Topic: Arsenal suffer major injury blow before Champions League clash
-Heat Score: 52
+breaking news signals
+transfer and injury keywords
+match drama terms
+major competition bonuses
+big club bonuses
+recency (published within 2 or 6 hours)
+trend bonus (same story covered by multiple sources)
 
-[script text generated by AI]
-```
+Only articles above the heat threshold get a script generated. All qualifying articles still get their intel stored regardless of score.
 
----
-
-## Scoring System
-
-Articles are ranked using a custom **heat score** that considers:
-
-* breaking news signals
-* transfers and manager changes
-* match drama
-* major competitions
-* big clubs
-* recency
-* number of sources covering the same story
-
-This helps prioritize stories that are most likely to generate engagement.
-
----
-
-## Future Improvements
-
-Planned upgrades include:
-
-* stronger AI script quality
-* improved topic clustering
-* better trend detection
-* automatic scheduling
-* support for multiple output platforms
-
----
-
-## Author
-
+Author
 Dominic
